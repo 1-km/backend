@@ -4,8 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import military._km.jwt.JwtAccessDeniedHandler;
 import military._km.jwt.JwtAuthenticationEntryPointHandler;
+import military._km.jwt.JwtFilter;
+import military._km.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -15,6 +18,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -28,6 +32,8 @@ public class SecurityConfig {
 
     private final JwtAccessDeniedHandler deniedHandler;
     private final JwtAuthenticationEntryPointHandler authenticationEntryPointHandler;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,10 +54,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(deniedHandler)
                         .authenticationEntryPoint(authenticationEntryPointHandler))
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/login","/signup").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
-                        .requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")
-                );
+                        .requestMatchers("/login","/signup","/logout").permitAll()
+                                .anyRequest().authenticated()
+                        //.requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
+                        //.requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")
+                )
+                .addFilterBefore(new JwtFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

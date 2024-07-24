@@ -2,14 +2,12 @@ package military._km.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 @AllArgsConstructor
 public class Member {
 

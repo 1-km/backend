@@ -3,12 +3,8 @@ package military._km.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import military._km.domain.RefreshToken;
-import military._km.domain.Role;
 import military._km.dto.TokenDto;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,7 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 
@@ -24,15 +20,12 @@ import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class JwtTokenProvider {
 
-    @Autowired
-    UserDetailsService userDetailsService;
 
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -53,17 +46,12 @@ public class JwtTokenProvider {
     /*
        AccessToken 생성
     */
-    public String createAccessToken(Authentication authentication) {
+    public String createAccessToken(String email, String authorities) {
         Date now = new Date();
         Date access_expire = new Date(now.getTime() + ACCESS_TOKEN_EXPIRE_TIME);
 
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
         return Jwts.builder()
-                .subject(authentication.getName())
-                .claim("email", authentication.getName())
+                .subject(email)
                 .claim(AUTHORITIES_KEY,authorities)
                 .issuedAt(now)
                 .expiration(access_expire)
@@ -74,60 +62,81 @@ public class JwtTokenProvider {
     /*
        RefreshToken 생성
     */
-    public String createRefreshToken(Authentication authentication) {
+    public String createRefreshToken(String email, String authorities) {
         Date now = new Date();
         Date refresh_expire = new Date(now.getTime() + REFRESH_TOKEN_EXPIRE_TIME);
+
+       return Jwts.builder()
+                .subject(email)
+                .claim("isRefreshToken", true)
+                .issuedAt(now)
+                .expiration(refresh_expire)
+                .signWith(key)
+                .compact();
+    }
+
+    public TokenDto createTokens(Authentication authentication) {
 
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        String refreshToken = Jwts.builder()
-                .subject(authentication.getName())
-                .claim("email", authentication.getName())
-                .claim(AUTHORITIES_KEY,authorities)
-                .issuedAt(now)
-                .expiration(refresh_expire)
-                .signWith(key)
-                .compact();
+        String accessToken = createAccessToken(authentication.getName(),authorities);
+        String refreshToken = createRefreshToken(authentication.getName(), authorities);
 
-        redisTemplate.opsForValue().set(
-                authentication.getName(),
-                refreshToken,
-                REFRESH_TOKEN_EXPIRE_TIME,
-                TimeUnit.MILLISECONDS
-        );
-
-        return refreshToken;
-    }
-
-    public TokenDto createTokens(Authentication authentication) {
-        String accessToken = createAccessToken(authentication);
-        String refreshToken = createRefreshToken(authentication);
-        String email = authentication.getName();
-
-        log.info("email = {}", email);
         log.info("accessToken = {}", accessToken);
         log.info("refreshToken = {}", refreshToken);
 
-        return new TokenDto(accessToken, refreshToken);
+        return TokenDto.builder()
+                .grantType(BEARER_TYPE)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    public TokenDto reissue(String freshToken) {
+        Claims claims = parse(freshToken);
+
+        if (!validateToken(freshToken) || claims.get("isRefreshToken") == null || !Boolean.TRUE.equals(claims.get("isRefreshToken"))) {
+            log.info("유요하지 않은 리프레쉬 토큰 입니다.");
+        }
+
+        String email = claims.getSubject();
+        String authorities = claims.get(AUTHORITIES_KEY).toString();
+
+        String accessToken = createAccessToken(email, authorities);
+        String refreshToken = createRefreshToken(email, authorities);
+
+        redisTemplate.opsForValue().set(
+                email,
+                refreshToken
+        );
+
+        return TokenDto.builder()
+                .grantType(BEARER_TYPE)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = parse(token);
 
         Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
                 .map(SimpleGrantedAuthority::new)
                 .toList();
 
-        User user = new User(claims.getSubject(), "", authorities);
+        UserDetails principal = new User(claims.getSubject(), "", authorities);
 
-        return new UsernamePasswordAuthenticationToken(user, token, authorities);
+        return new UsernamePasswordAuthenticationToken(principal,"", authorities);
 
+    }
+
+    public Long getExpiration(String accessToken) { // 남은 만료기간
+        Date expiration = Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload().getExpiration();
+
+        long now = new Date().getTime();
+        return expiration.getTime()-now;
     }
 
     public boolean validateToken(String token) {
@@ -140,6 +149,14 @@ public class JwtTokenProvider {
            log.info("잘못된 토큰입니다.");
         }
         return false;
+    }
+
+    private Claims parse(String accessToken) {
+        try {
+            return Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
     }
 
 }
