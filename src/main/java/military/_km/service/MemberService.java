@@ -3,6 +3,8 @@ package military._km.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import military._km.domain.Member;
+import military._km.domain.Military;
+import military._km.domain.RefreshToken;
 import military._km.domain.Role;
 import military._km.dto.MemberLoginDto;
 import military._km.dto.MemberSignupDto;
@@ -48,17 +50,25 @@ public class MemberService {
 
     @Transactional
     public Member signup(MemberSignupDto memberSignupDto) {
+        if(!validateEmail(memberSignupDto.getEmail())){
+            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+        }
+        if (!validateNickName(memberSignupDto.getNickname())) {
+            throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
+        }
         Member member = Member.builder()
                 .email(memberSignupDto.getEmail())
                 .password(passwordEncoder.encode(memberSignupDto.getPassword()))
                 .role(Role.ROLE_USER)
                 .nickname(memberSignupDto.getNickname())
-                .createdAt(new Date(System.currentTimeMillis()).toString())
+                .military(Military.fromValue(memberSignupDto.getMilitary()))
+                .base(memberSignupDto.getBase())
+                .startdate(memberSignupDto.getStartdate())
+                .finishdate(memberSignupDto.getFinishdate())
                 .build();
 
-        memberRepository.save(member);
-
-        return member;
+            memberRepository.save(member);
+            return member;
     }
 
     @Transactional
@@ -72,9 +82,27 @@ public class MemberService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         TokenDto tokenDto = jwtTokenProvider.createTokens(authentication);
 
+        if (redisTemplate.opsForValue().get(loginDto.getEmail()) != null) {
+            redisTemplate.delete(loginDto.getEmail());
+            redisTemplate.opsForValue().set(loginDto.getEmail(), tokenDto.getRefreshToken(), jwtTokenProvider.getExpiration(tokenDto.getRefreshToken()), TimeUnit.MILLISECONDS);
+            RefreshToken refreshToken = new RefreshToken();
+            refreshToken.setEmail(loginDto.getEmail());
+            refreshToken.setToken(tokenDto.getRefreshToken());
+            refreshTokenRepository.save(refreshToken);
+        }
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setEmail(loginDto.getEmail());
+        refreshToken.setToken(tokenDto.getRefreshToken());
+        refreshToken.setTime(jwtTokenProvider.getExpiration(tokenDto.getRefreshToken()).toString());
+
+        refreshTokenRepository.save(refreshToken);
+
         redisTemplate.opsForValue().set(
                 loginDto.getEmail(),
-                tokenDto.getRefreshToken()
+                tokenDto.getRefreshToken(),
+                jwtTokenProvider.getExpiration(tokenDto.getRefreshToken()),
+                TimeUnit.MILLISECONDS
         );
 
         return tokenDto;
@@ -83,23 +111,54 @@ public class MemberService {
     @Transactional
     public ResponseEntity<HttpStatus> logout(String header) {
         String token = header.substring(7);
-        Long expiration = jwtTokenProvider.getExpiration(token);
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (redisTemplate.opsForValue().get(email) != null) {
-            redisTemplate.delete(email);
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new IllegalArgumentException("로그아웃: 유효하지 않은 토큰입니다.");
+        }
+        Long expiration = jwtTokenProvider.getExpirationFromNow(token);
+        Authentication authentication = jwtTokenProvider.getAuthentication(token);
+
+        if (redisTemplate.opsForValue().get(authentication.getName()) != null) { // refresh 토큰 삭제
+            redisTemplate.delete(authentication.getName());
+            refreshTokenRepository.deleteById(authentication.getName());
         }
 
+        refreshTokenRepository.deleteById(authentication.getName());
         redisTemplate.opsForValue().set(token, "logout", Duration.ofMillis(expiration));
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
-    public String reissue(String freshToken) {
+    public TokenDto reissue(String freshToken) {
+        Authentication authentication = jwtTokenProvider.getAuthenticationByRefreshToken(freshToken);
+        String email = authentication.getName();
 
-        if (freshToken == null || !freshToken.startsWith("Bearer ")) {
-            log.info("유효하지 않은 토큰입니다.");
+        String refreshTokenInRedis = redisTemplate.opsForValue().get(email);
+        if (refreshTokenInRedis == null) {
+            return null;
         }
-        return freshToken.substring(7);
+        if (!jwtTokenProvider.validateToken(refreshTokenInRedis)) {
+            redisTemplate.delete(refreshTokenInRedis);
+            return null;
+        }
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String authorities = getAuthorities(authentication);
+
+        redisTemplate.delete(refreshTokenInRedis);
+        refreshTokenRepository.deleteById(authentication.getName());
+        TokenDto tokenDto = jwtTokenProvider.createTokens(authentication);
+        redisTemplate.opsForValue().set(authentication.getName(),
+                tokenDto.getRefreshToken(),
+                jwtTokenProvider.getExpiration(tokenDto.getRefreshToken()),
+                TimeUnit.MILLISECONDS);
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setEmail(authentication.getName());
+        refreshToken.setToken(tokenDto.getRefreshToken());
+
+        refreshTokenRepository.save(refreshToken);
+
+        return tokenDto;
     }
 
     @Transactional(readOnly = true)
@@ -138,6 +197,34 @@ public class MemberService {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
+    }
+
+    public void validateExpire(String header) {
+        String accessToken = resolve(header);
+        if (!jwtTokenProvider.validateAccessTokenByExpired(accessToken)) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+        }
+    }
+
+    public String resolve(String header) {
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+
+    public boolean validateEmail(String email) { // 이메일, 닉네임 중복검사
+        if (!memberRepository.existsByEmail(email)) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean validateNickName(String nickname) {
+        if (!memberRepository.existsByNickname(nickname)) {
+            return true;
+        }
+        return false;
     }
 
 }

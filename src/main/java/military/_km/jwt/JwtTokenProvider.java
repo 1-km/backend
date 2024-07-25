@@ -3,8 +3,10 @@ package military._km.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import military._km.dto.TokenDto;
+import military._km.service.CustomUserDetailService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,15 +31,18 @@ public class JwtTokenProvider {
 
     private final RedisTemplate<String, String> redisTemplate;
 
+    private final CustomUserDetailService userDetailService;
+
     private static final String AUTHORITIES_KEY = "auth";
     private static final String BEARER_TYPE = "Bearer";
     private final SecretKey key;
 
-    private final static Long ACCESS_TOKEN_EXPIRE_TIME = 30 * 60 * 1000L;
-    private final static Long REFRESH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000L;
+    private final static Long ACCESS_TOKEN_EXPIRE_TIME = 30 * 60 * 1000L; // 30분
+    private final static Long REFRESH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000L; // 일주일
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
-                            RedisTemplate<String, String> redisTemplate) {
+                            RedisTemplate<String, String> redisTemplate, CustomUserDetailService userDetailService) {
+        this.userDetailService = userDetailService;
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.redisTemplate = redisTemplate;
@@ -132,23 +137,57 @@ public class JwtTokenProvider {
 
     }
 
-    public Long getExpiration(String accessToken) { // 남은 만료기간
+    public Authentication getAuthenticationByRefreshToken(String refreshToken) {
+        String email = parse(refreshToken).getSubject();
+        UserDetails userDetails = userDetailService.loadUserByUsername(email);
+
+        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+    }
+
+    public Long getExpirationFromNow(String accessToken) { // 남은 만료기간
         Date expiration = Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload().getExpiration();
 
         long now = new Date().getTime();
         return expiration.getTime()-now;
     }
 
+    public Long getExpiration(String token) {
+        return parse(token).getExpiration().getTime();
+    }
+
+
+
     public boolean validateToken(String token) {
+        String value = redisTemplate.opsForValue().get(token);
         try {
+            if (value != null && value.equals("logout")) { // 로그아웃
+                return false;
+            }
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            log.info("토큰이 만료 되었습니다.");
+            log.info("토큰이 만료되었습니다.");
+            throw new RuntimeException("토큰 만료");
         } catch (JwtException e) {
-           log.info("잘못된 토큰입니다.");
+            log.info("잘못된 토큰입니다.");
+        } catch (IllegalArgumentException e) {
+            log.info("claim이 비어있습니다.");
+        } catch (NullPointerException e) {
+            log.info("Jwt token이 비어있습니다.");
         }
         return false;
+    }
+
+    public boolean validateAccessTokenByExpired(String accessToken) {
+        try {
+            return parse(accessToken)
+                    .getExpiration()
+                    .before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private Claims parse(String accessToken) {

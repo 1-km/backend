@@ -1,15 +1,12 @@
 package military._km.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
-
-import java.time.LocalDateTime;
 
 @Getter @Setter
 @RedisHash
@@ -17,13 +14,14 @@ import java.time.LocalDateTime;
 public class RefreshToken {
 
     @Id
-    @Column(name = "email")
+    @Column(name = "refresh_email")
     private String email;
 
     @Indexed
-    @Column(name = "token")
+    @Column(name = "refresh_token")
     private String token;
 
-    @CreatedDate
-    private LocalDateTime time;
+    @Column(name = "refresh_expire")
+    private String time;
+
 }

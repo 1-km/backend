@@ -26,8 +26,8 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String jwt = resolveToken(request);
 
-        if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-            if (redisTemplate.opsForValue().get(jwt) == null) {
+        if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) { // 토큰 검사
+            if (redisTemplate.opsForValue().get(jwt) == null) { // 로그아웃으로 표시 되어 있지 않은 토큰
                 Authentication authentication = tokenProvider.getAuthentication(jwt);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }

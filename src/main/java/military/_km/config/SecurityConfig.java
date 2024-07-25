@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(deniedHandler)
                         .authenticationEntryPoint(authenticationEntryPointHandler))
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/login","/signup","/logout").permitAll()
+                        .requestMatchers("/login","/signup","/logout","/reissue").permitAll()
                                 .anyRequest().authenticated()
                         //.requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
                         //.requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")
