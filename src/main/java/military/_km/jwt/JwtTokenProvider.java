@@ -138,6 +138,9 @@ public class JwtTokenProvider {
     }
 
     public Authentication getAuthenticationByRefreshToken(String refreshToken) {
+        if (!validateToken(refreshToken) || claims.get("isRefreshToken") == null || !Boolean.TRUE.equals(claims.get("isRefreshToken"))) {
+            log.info("유요하지 않은 리프레쉬 토큰 입니다.");
+        }
         String email = parse(refreshToken).getSubject();
         UserDetails userDetails = userDetailService.loadUserByUsername(email);
 
