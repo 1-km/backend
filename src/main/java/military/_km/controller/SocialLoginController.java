@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import military._km.dto.IdTokenRequest;
 import military._km.dto.TokenDto;
 import military._km.service.GoogleOAuthService;
+import military._km.service.KakaoOAuthService;
 
 @Controller
 @Slf4j
@@ -30,6 +31,7 @@ public class SocialLoginController {
 	private String googleClientId;
 
 	private final GoogleOAuthService googleOAuthService;
+	private final KakaoOAuthService kakaoOAuthService;
 
 	@PostMapping("/google")
 	public ResponseEntity<?> authenticateGoogleUser(@RequestBody IdTokenRequest request) throws Exception {
@@ -50,6 +52,17 @@ public class SocialLoginController {
 		} else {
 			// 사용자 인증 실패
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid ID token");
+		}
+	}
+
+	@PostMapping("/kakao")
+	public ResponseEntity<?> authenticateKakaoUser(@RequestBody IdTokenRequest request) {
+		String accessToken = request.getIdToken();
+		try {
+			TokenDto tokenDto = kakaoOAuthService.login(accessToken);
+			return ResponseEntity.ok(tokenDto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
 		}
 	}
 }
