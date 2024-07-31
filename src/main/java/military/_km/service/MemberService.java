@@ -108,6 +108,23 @@ public class MemberService {
         return tokenDto;
     }
 
+    public void storeRefreshToken(String email, String refreshToken) {
+        //기존 리프레시 토큰이 있는 경우 삭제
+        if (redisTemplate.opsForValue().get(email) != null) {
+            redisTemplate.delete(email);
+        }
+
+        //새로운 리프레시 토큰 저장
+        redisTemplate.opsForValue().set(email, refreshToken, jwtTokenProvider.getExpiration(refreshToken), TimeUnit.MILLISECONDS);
+
+        RefreshToken newRefreshToken = new RefreshToken();
+        newRefreshToken.setEmail(email);
+        newRefreshToken.setToken(refreshToken);
+        newRefreshToken.setTime(jwtTokenProvider.getExpiration(refreshToken).toString());
+
+        refreshTokenRepository.save(newRefreshToken);
+    }
+
     @Transactional
     public ResponseEntity<HttpStatus> logout(String header) {
         String token = header.substring(7);

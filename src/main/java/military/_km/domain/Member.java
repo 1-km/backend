@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import military._km.converter.MilitaryConverter;
+import military._km.domain.social.SocialCode;
 
 import java.util.Date;
 
@@ -41,5 +42,12 @@ public class Member extends BaseTimeEntity{
 
     @Column(name = "member_finishdate")
     private String finishdate;
+
+    /**
+     * 소셜 로그인 사용자의 경우 이 필드에는 제공자 ID(예: "google", "naver", "kakao")가 저장
+     * 이메일 인증 사용자의 경우 이 필드는 null
+     */
+    @Column(name = "socialCode")
+    private SocialCode socialCode;
 
 }
