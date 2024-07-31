@@ -19,9 +19,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,6 +37,11 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
 
+    private static final String[] PERMIT_ALL_PATTERNS = new String[] {
+        "/login","/signup","/logout","/reissue",
+        "/auth/naver","/auth/kakao","/auth/google"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -43,6 +50,8 @@ public class SecurityConfig {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                         CorsConfiguration config = new CorsConfiguration();
+                        config.addAllowedOriginPattern("http://10.0.2.2:8080");
+                        config.addAllowedOriginPattern("http://127.0.0.1:8080");
                         config.setAllowedMethods(List.of("GET","POST","DELETE","PATCH","OPTION","PUT"));
                         config.setAllowedMethods(Collections.singletonList("*"));
                         return config;
@@ -54,8 +63,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(deniedHandler)
                         .authenticationEntryPoint(authenticationEntryPointHandler))
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/login","/signup","/logout","/reissue").permitAll()
-                                .anyRequest().authenticated()
+                        .requestMatchers(Arrays.stream(PERMIT_ALL_PATTERNS)
+                            .map(AntPathRequestMatcher::antMatcher)
+                            .toArray(AntPathRequestMatcher[]::new)
+                        ).permitAll()
+                        .anyRequest().authenticated()
                         //.requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
                         //.requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")
                 )
