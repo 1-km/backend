@@ -49,7 +49,7 @@ public class SocialLoginController {
 				TokenDto tokenDto = googleOAuthService.login(idToken);
 				return ResponseEntity.ok(tokenDto);
 			} catch (IllegalArgumentException e) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not Registered");
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
 			}
 		} else {
 			// 사용자 인증 실패
