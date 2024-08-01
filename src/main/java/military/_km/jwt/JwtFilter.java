@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -35,6 +34,7 @@ public class JwtFilter extends OncePerRequestFilter {
         else{
             log.info("유효한 토큰이 없습니다.");
         }
+
         filterChain.doFilter(request, response);
     }
 
@@ -46,5 +46,14 @@ public class JwtFilter extends OncePerRequestFilter {
             return jwt.substring(7);
         }
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String requestURI = request.getRequestURI();
+        return requestURI.matches("/email/send") || requestURI.matches("/email/verify") ||
+                requestURI.matches("/signup") || requestURI.matches("/login") ||
+                requestURI.matches("/auth/naver") || requestURI.matches("/auth/kakao") ||
+                requestURI.matches("/auth/google");
     }
 }

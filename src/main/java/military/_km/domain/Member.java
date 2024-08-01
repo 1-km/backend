@@ -7,8 +7,6 @@ import lombok.*;
 import military._km.converter.MilitaryConverter;
 import military._km.domain.social.SocialCode;
 
-import java.util.Date;
-
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

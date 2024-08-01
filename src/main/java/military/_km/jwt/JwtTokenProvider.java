@@ -6,7 +6,6 @@ import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import military._km.dto.TokenDto;
 import military._km.service.CustomUserDetailService;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -138,8 +137,8 @@ public class JwtTokenProvider {
     }
 
     public Authentication getAuthenticationByRefreshToken(String refreshToken) {
-         Claims claims = parse(refreshToken);
-        
+        Claims claims = parse(refreshToken);
+
         if (!validateToken(refreshToken) || claims.get("isRefreshToken") == null || !Boolean.TRUE.equals(claims.get("isRefreshToken"))) {
             log.info("유요하지 않은 리프레쉬 토큰 입니다.");
         }
