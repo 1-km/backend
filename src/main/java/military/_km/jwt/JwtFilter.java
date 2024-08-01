@@ -35,6 +35,7 @@ public class JwtFilter extends OncePerRequestFilter {
         else{
             log.info("유효한 토큰이 없습니다.");
         }
+
         filterChain.doFilter(request, response);
     }
 
@@ -46,5 +47,12 @@ public class JwtFilter extends OncePerRequestFilter {
             return jwt.substring(7);
         }
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String requestURI = request.getRequestURI();
+        return requestURI.matches("/email/send") || requestURI.matches("/email/verify") ||
+                requestURI.matches("/signup") || requestURI.matches("/login");
     }
 }

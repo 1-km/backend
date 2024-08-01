@@ -1,7 +1,7 @@
 package military._km.domain;
 
 public enum Military {
-    army("육군"), navy("해군"), air_force("공군");
+    army("육군"), marine("해병대"), navy("해군"), air_force("공군");
 
     private String value;
 

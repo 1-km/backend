@@ -3,7 +3,6 @@ package military._km.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import military._km.dto.TokenDto;
 import military._km.service.CustomUserDetailService;
@@ -138,6 +137,11 @@ public class JwtTokenProvider {
     }
 
     public Authentication getAuthenticationByRefreshToken(String refreshToken) {
+        Claims claims = parse(refreshToken);
+
+        if (!validateToken(refreshToken) || claims.get("isRefreshToken") == null || !Boolean.TRUE.equals(claims.get("isRefreshToken"))) {
+            log.info("유요하지 않은 리프레쉬 토큰 입니다.");
+        }
         String email = parse(refreshToken).getSubject();
         UserDetails userDetails = userDetailService.loadUserByUsername(email);
 

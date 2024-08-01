@@ -43,8 +43,10 @@ public class SecurityConfig {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                         CorsConfiguration config = new CorsConfiguration();
+                        config.addAllowedOriginPattern("http://10.0.2.2:8080");
                         config.setAllowedMethods(List.of("GET","POST","DELETE","PATCH","OPTION","PUT"));
                         config.setAllowedMethods(Collections.singletonList("*"));
+                        config.setAllowCredentials(true);
                         return config;
                     }
                 }))
@@ -54,7 +56,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(deniedHandler)
                         .authenticationEntryPoint(authenticationEntryPointHandler))
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/login","/signup","/logout","/reissue").permitAll()
+                        .requestMatchers("/login","/signup","/logout","/reissue","/email/send", "/email/verify").permitAll()
                                 .anyRequest().authenticated()
                         //.requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
                         //.requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")

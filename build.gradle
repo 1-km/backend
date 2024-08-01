@@ -28,6 +28,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	//embedded-redis
 	implementation group: 'com.github.codemonstur', name: 'embedded-redis', version: '1.4.3'
+	// email
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	implementation 'org.jetbrains:annotations:24.0.0'

@@ -142,7 +142,6 @@ public class MemberService {
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String authorities = getAuthorities(authentication);
 
         redisTemplate.delete(refreshTokenInRedis);
         refreshTokenRepository.deleteById(authentication.getName());
@@ -155,6 +154,7 @@ public class MemberService {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setEmail(authentication.getName());
         refreshToken.setToken(tokenDto.getRefreshToken());
+        refreshToken.setTime(jwtTokenProvider.getExpiration(tokenDto.getRefreshToken()).toString());
 
         refreshTokenRepository.save(refreshToken);
 
@@ -213,14 +213,14 @@ public class MemberService {
         return null;
     }
 
-    public boolean validateEmail(String email) { // 이메일, 닉네임 중복검사
+    public boolean validateEmail(String email) { // 이메일 중복검사
         if (!memberRepository.existsByEmail(email)) {
             return true;
         }
         return false;
     }
 
-    public boolean validateNickName(String nickname) {
+    public boolean validateNickName(String nickname) { // 닉네임 중복검사
         if (!memberRepository.existsByNickname(nickname)) {
             return true;
         }
