@@ -21,6 +21,7 @@ import military._km.dto.IdTokenRequest;
 import military._km.dto.TokenDto;
 import military._km.service.GoogleOAuthService;
 import military._km.service.KakaoOAuthService;
+import military._km.service.NaverOAuthService;
 
 @Controller
 @Slf4j
@@ -32,6 +33,7 @@ public class SocialLoginController {
 
 	private final GoogleOAuthService googleOAuthService;
 	private final KakaoOAuthService kakaoOAuthService;
+	private final NaverOAuthService naverOAuthService;
 
 	@PostMapping("/google")
 	public ResponseEntity<?> authenticateGoogleUser(@RequestBody IdTokenRequest request) throws Exception {
@@ -60,6 +62,17 @@ public class SocialLoginController {
 		String accessToken = request.getIdToken();
 		try {
 			TokenDto tokenDto = kakaoOAuthService.login(accessToken);
+			return ResponseEntity.ok(tokenDto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+		}
+	}
+
+	@PostMapping("/naver")
+	public ResponseEntity<?> authenticateNaverUser(@RequestBody IdTokenRequest request) {
+		String accessToken = request.getIdToken();
+		try {
+			TokenDto tokenDto = naverOAuthService.login(accessToken);
 			return ResponseEntity.ok(tokenDto);
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
