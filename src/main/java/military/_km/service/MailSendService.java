@@ -20,7 +20,6 @@ public class MailSendService {
     private final JavaMailSender mailSender;
     private final CertificationNumberDao numberDao;
     private final CertificationGenerator generator;
-    private static String DOMAIN_NAME = "http://locahost:8080";
 
 
     public EmailResponse sendForCertification(String email) throws NoSuchAlgorithmException, MessagingException {
