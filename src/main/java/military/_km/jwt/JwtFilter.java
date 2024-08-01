@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -53,6 +52,8 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String requestURI = request.getRequestURI();
         return requestURI.matches("/email/send") || requestURI.matches("/email/verify") ||
-                requestURI.matches("/signup") || requestURI.matches("/login");
+                requestURI.matches("/signup") || requestURI.matches("/login") ||
+                requestURI.matches("/auth/naver") || requestURI.matches("/auth/kakao") ||
+                requestURI.matches("/auth/google");
     }
 }
