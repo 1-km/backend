@@ -1,5 +1,6 @@
 package military._km.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,7 +24,8 @@ import military._km.jwt.JwtTokenProvider;
 @RequiredArgsConstructor
 public class KakaoOAuthService {
 
-	private static final String KAKAO_USER_INFO_URL = "https://kapi.kakao.com/v2/user/me";
+	@Value("${spring.security.oauth2.client.provider.kakao.user-info-uri}")
+	private String KAKAO_USER_INFO_URL;
 	private final ValidateUserService validateUserService;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final MemberService memberService;
@@ -59,11 +61,9 @@ public class KakaoOAuthService {
 					.refreshToken(refreshToken)
 					.build();
 			} else {
-				log.warn("Failed to extract user information");
 				throw new RuntimeException("Failed to extract user information");
 			}
 		} catch (HttpClientErrorException e) {
-			log.error("Failed to fetch user info from Kakao", e);
 			throw new RuntimeException("Failed to fetch user info from Kakao", e);
 		}
 	}

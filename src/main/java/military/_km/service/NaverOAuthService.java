@@ -1,5 +1,6 @@
 package military._km.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,14 +21,17 @@ import military._km.jwt.JwtTokenProvider;
 @Service
 @RequiredArgsConstructor
 public class NaverOAuthService {
-	private static final String NAVER_OAUTH_URL = "https://openapi.naver.com/v1/nid/me";
+
+	@Value("${spring.security.oauth2.client.provider.naver.user-info-uri}")
+	private String NAVER_USER_INFO_URL;
+
 	private final ValidateUserService validateUserService;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final MemberService memberService;
 
 	public TokenDto login(String naverAccessToken) {
 		RestTemplate restTemplate = new RestTemplate();
-		String url = UriComponentsBuilder.fromHttpUrl(NAVER_OAUTH_URL)
+		String url = UriComponentsBuilder.fromHttpUrl(NAVER_USER_INFO_URL)
 			.toUriString();
 		try {
 			HttpHeaders headers = new HttpHeaders();
