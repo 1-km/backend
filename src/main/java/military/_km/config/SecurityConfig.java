@@ -40,7 +40,7 @@ public class SecurityConfig {
     private static final String[] PERMIT_ALL_PATTERNS = new String[] {
             "/login","/signup","/logout","/reissue",
             "/auth/naver","/auth/kakao","/auth/google"
-            ,"mail/send", "mail/verify"
+            ,"/email/send", "/email/verify", "/check"
     };
 
     @Bean

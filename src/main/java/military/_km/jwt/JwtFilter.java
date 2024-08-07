@@ -51,9 +51,9 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String requestURI = request.getRequestURI();
-        return requestURI.matches("/email/send") || requestURI.matches("/email/verify") ||
-                requestURI.matches("/signup") || requestURI.matches("/login") ||
-                requestURI.matches("/auth/naver") || requestURI.matches("/auth/kakao") ||
-                requestURI.matches("/auth/google");
+        return requestURI.matches("/api/email/send") || requestURI.matches("/api/email/verify") ||
+                requestURI.matches("/api/signup") || requestURI.matches("/api/login") ||
+                requestURI.matches("/api/auth/naver") || requestURI.matches("/api/auth/kakao") ||
+                requestURI.matches("/api/auth/google") || requestURI.matches("api/check");
     }
 }

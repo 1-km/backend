@@ -62,7 +62,6 @@ public class MemberService {
                 .role(Role.ROLE_USER)
                 .nickname(memberSignupDto.getNickname())
                 .military(Military.fromValue(memberSignupDto.getMilitary()))
-                .base(memberSignupDto.getBase())
                 .startdate(memberSignupDto.getStartdate())
                 .finishdate(memberSignupDto.getFinishdate())
                 .build();

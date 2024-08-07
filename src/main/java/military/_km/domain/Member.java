@@ -40,9 +40,6 @@ public class Member extends BaseTimeEntity {
 	@Column(name = "member_role")
 	private Role role;
 
-	@Column(name = "member_base")
-	private String base;
-
 	@Column(name = "member_startdate")
 	private String startdate;
 
