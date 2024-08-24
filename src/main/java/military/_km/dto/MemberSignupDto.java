@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import military._km.domain.Military;
 
 @Data
 @NoArgsConstructor
@@ -30,15 +29,12 @@ public class MemberSignupDto {
 	private String military;
 
 	@NotEmpty
-	private String base;
-
-	@NotEmpty
 	private String startdate;
 
 	@NotEmpty
 	private String finishdate;
 
-    @NotEmpty
-    private String socialCode;
+    //@NotEmpty
+    //private String socialCode;
 
 }

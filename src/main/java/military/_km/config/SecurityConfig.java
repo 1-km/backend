@@ -38,8 +38,9 @@ public class SecurityConfig {
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String[] PERMIT_ALL_PATTERNS = new String[] {
-        "/login","/signup","/logout","/reissue",
-        "/auth/naver","/auth/kakao","/auth/google"
+            "/login","/signup","/logout","/reissue",
+            "/auth/naver","/auth/kakao","/auth/google"
+            ,"/email/send", "/email/verify", "/check"
     };
 
     @Bean
@@ -63,11 +64,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(deniedHandler)
                         .authenticationEntryPoint(authenticationEntryPointHandler))
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers(Arrays.stream(PERMIT_ALL_PATTERNS)
-                            .map(AntPathRequestMatcher::antMatcher)
-                            .toArray(AntPathRequestMatcher[]::new)
-                        ).permitAll()
-                        .anyRequest().authenticated()
+                                .requestMatchers(Arrays.stream(PERMIT_ALL_PATTERNS)
+                                        .map(AntPathRequestMatcher::antMatcher)
+                                        .toArray(AntPathRequestMatcher[]::new)
+                                ).permitAll()
+                                .anyRequest().authenticated()
                         //.requestMatchers(HttpMethod.GET,"/**").hasAnyRole("USER","SOCIAL")
                         //.requestMatchers(HttpMethod.POST,"/**").hasAnyRole("USER","ADMIN","SOCIAL")
                 )

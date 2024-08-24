@@ -18,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,8 +32,10 @@ public class MemberController {
     public ResponseEntity<TokenDto> login(@Valid @RequestBody MemberLoginDto memberLoginDto) {
         try {
             TokenDto tokenDto = memberService.login(memberLoginDto);
+            log.info("로그인에 성공했습니다.");
             return new ResponseEntity<>(new TokenDto(tokenDto.getGrantType(), tokenDto.getAccessToken(), tokenDto.getRefreshToken()), HttpStatus.OK);
         } catch (AuthenticationException e) {
+            log.info("로그인에 실패했습니다.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
@@ -40,12 +44,12 @@ public class MemberController {
     public ResponseEntity<HttpStatus> signup(@Valid @RequestBody MemberSignupDto memberSignupDto) {
         Member member = memberService.signup(memberSignupDto);
         if (member.getId() != null) {
+            log.info("회원가입에 성공했습니다.");
             return new ResponseEntity<>(HttpStatus.CREATED);
         } else {
             log.info("회원가입에 실패하였습니다.");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
     }
 
     @PostMapping("/member/logout")
@@ -85,5 +89,14 @@ public class MemberController {
         }
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<HttpStatus> checkEmail(@RequestParam(name = "email") String email) {
+        boolean result = memberService.validateEmail(email);
 
+        if(!result) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 }

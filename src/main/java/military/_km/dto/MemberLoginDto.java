@@ -16,5 +16,4 @@ public class MemberLoginDto {
     @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*\\W).{8,16}$", message = "비밀번호는 필수 입력값입니다.")
     private String password;
 
-
 }

@@ -7,8 +7,6 @@ import lombok.*;
 import military._km.converter.MilitaryConverter;
 import military._km.domain.social.SocialCode;
 
-import java.util.Date;
-
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -41,9 +39,6 @@ public class Member extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "member_role")
 	private Role role;
-
-	@Column(name = "member_base")
-	private String base;
 
 	@Column(name = "member_startdate")
 	private String startdate;
